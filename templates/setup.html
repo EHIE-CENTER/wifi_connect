@@ -13,8 +13,8 @@
   <body>
     <div class="container">
       <div class="row">
+        <h2>WiFi Configuration</h2>
         <div class="col-sm-6">
-          <h2>WiFi Configuration</h2>
           <div class="input-group">
             <span>Status: </span><span id="wifi-connection-status">Loading...</span>
           </div>
@@ -23,6 +23,8 @@
           <ul class="list-group" id="available-networks">
             <button type="button" class="list-group-item">Loading...</button>
           </ul>
+      </div>
+      <div class="col-sm-6">
           <div class="input-group">
             <span class="input-group-addon" id="ssid-label">SSID</span>
             <input type="text" class="form-control" id="ssid" placeholder="Loading..." aria-describedby="ssid">
@@ -86,11 +88,17 @@
         $('#available-networks').empty();
 
         for (var i = 0; i < data.length; i++) {
-          $('#available-networks').append('<button type="button" class="list-group-item">' + data[i] + '</button>');
+        $('#available-networks').append(
+            '<button type="button" class="list-group-item">' +
+            '<span class="badge">' + data[i][1] + '</span>' +
+            '<span class="ssid">' + data[i][0] + '</span>' +
+            '</button>'
+            );
         }
 
         $('#available-networks button').click(function(event) {
-          $('#ssid').val($(event.target).text())
+            console.log($($(event.currentTarget).children()[1]));
+            $('#ssid').val($($(event.currentTarget).children()[1]).text());
         });
       });
 
