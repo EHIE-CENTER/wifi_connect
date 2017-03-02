@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Dylos Setup</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-6">
+          <h2>WiFi Configuration</h2>
+          <div class="input-group">
+            <span>Status: </span><span id="wifi-connection-status">Loading...</span>
+          </div>
+
+          <p>Available Networks:</p>
+          <ul class="list-group" id="available-networks">
+            <button type="button" class="list-group-item">Loading...</button>
+          </ul>
+          <div class="input-group">
+            <span class="input-group-addon" id="ssid-label">SSID</span>
+            <input type="text" class="form-control" id="ssid" placeholder="Loading..." aria-describedby="ssid">
+          </div>
+
+          <div class="input-group">
+            <span class="input-group-addon" id="password-label">Password</span>
+            <input type="text" class="form-control" id="password" placeholder="Loading..." aria-describedby="password">
+          </div>
+
+          <button type="button" id="wifi-button" class="btn btn-default">
+            Update
+          </button>
+          <div id="wifi-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <style type="text/css">
+      .input-group {
+        margin-bottom: 10px;
+      }
+      #wifi-status {
+        margin: 10px 0;
+      }
+    </style>
+
+    <script src="js/jquery-3.1.1.min.js"></script>
+    <script src="js/socket.io.min.js"></script>
+    <script type="text/javascript">
+      var socket = io();
+
+      // Get the status of the WiFi
+      socket.emit('wifi-status');
+
+      // Get the current WiFi SSID and password
+      socket.emit('wifi-get');
+
+      // Get the available networks
+      socket.emit('wifi-scan');
+
+      socket.on('wifi-get', function(data) {
+        $('#ssid').attr("placeholder", "");
+        $('#password').attr("placeholder", "");
+
+        if (!$('#ssid').val()) {
+          $('#ssid').val(data.ssid);
+        }
+
+        if (!$('#password').val()) {
+          $('#password').val(data.password);
+        }
+      });
+
+      socket.on('wifi-status', function(data) {
+        $('#wifi-connection-status').text(data.message);
+      });
+
+      socket.on('wifi-scan', function(data) {
+        // Clear out old items
+        $('#available-networks').empty();
+
+        for (var i = 0; i < data.length; i++) {
+          $('#available-networks').append('<button type="button" class="list-group-item">' + data[i] + '</button>');
+        }
+
+        $('#available-networks button').click(function(event) {
+          $('#ssid').val($(event.target).text())
+        });
+      });
+
+      socket.on('wifi-update', function (data) {
+        $("#wifi-status").text(data.message)
+      });
+
+      $("#wifi-button").click(function() {
+        socket.emit('wifi-update', {ssid: $('#ssid').val(), password: $('#password').val()});
+      });
+    </script>
+  </body>
+</html>
+
