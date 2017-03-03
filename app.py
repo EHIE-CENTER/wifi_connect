@@ -20,6 +20,15 @@ socketio = SocketIO(app, logger=True, engineio_logger=True)
 queue = Queue()
 
 
+def get_ip_address():
+    try:
+        output = subprocess.check_output(['ip', 'addr', 'show', INTERFACE])
+        output = output.decode().split("inet ")[1].split("/")[0]
+        return output
+    except IndexError as e:
+        return None
+
+
 @app.route('/js/<path:path>')
 def send_js(path):
     return send_from_directory('js', path)
@@ -32,11 +41,11 @@ def main():
 
 @socketio.on('wifi-status')
 def handle_wifi_status():
-    try:
-        output = subprocess.check_output(['ip', 'addr', 'show', INTERFACE])
-        output = output.decode().split("inet ")[1].split("/")[0]
-        emit('wifi-status', {'message': 'Connected ({})'.format(output)})
-    except IndexError as e:
+    ip_address = get_ip_address()
+
+    if ip_address is not None:
+        emit('wifi-status', {'message': 'Connected ({})'.format(ip_address)})
+    else:
         emit('wifi-status', {'message': 'Not Connected'})
 
 
@@ -118,5 +127,19 @@ def check_processes():
 
 
 if __name__ == "__main__":
+    ip_address = get_ip_address()
+
+    if ip_address is not None:
+        print("Network already connected")
+    else:
+        print("Connecting to old network")
+        scheme = Scheme.find(INTERFACE, SCHEME)
+        if scheme is not None:
+            try:
+                scheme.activate()
+            except Exception as e:
+                print(e)
+
+    print("Starting web service")
     eventlet.spawn_n(check_processes)
     socketio.run(app, host='0.0.0.0', port=3210)
