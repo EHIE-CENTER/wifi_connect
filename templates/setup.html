@@ -15,10 +15,6 @@
       <div class="row">
         <h2>WiFi Configuration</h2>
         <div class="col-sm-6">
-          <div class="input-group">
-            <span>Status: </span><span id="wifi-connection-status">Loading...</span>
-          </div>
-
           <p>Available Networks:</p>
           <ul class="list-group" id="available-networks">
             <button type="button" class="list-group-item">Loading...</button>
@@ -26,7 +22,11 @@
       </div>
       <div class="col-sm-6">
           <div class="input-group">
-            <span class="input-group-addon" id="ssid-label">SSID</span>
+            <span>Status: </span><span id="wifi-connection-status">Loading...</span>
+          </div>
+
+          <div class="input-group">
+            <span class="input-group-addon" id="ssid-label">Network Name</span>
             <input type="text" class="form-control" id="ssid" placeholder="Loading..." aria-describedby="ssid">
           </div>
 
@@ -106,8 +106,38 @@
         $("#wifi-status").text(data.message)
       });
 
+      socket.on('reconnect', function(data) {
+        // Update UI
+        $("#wifi-status").text("")
+        $('#wifi-connection-status').text("Loading...");
+        socket.emit('wifi-status');
+        socket.emit('wifi-get');
+        socket.emit('wifi-scan');
+      });
+
+      var checking = false;
       $("#wifi-button").click(function() {
+        $("#wifi-status").text('Updating...');
         socket.emit('wifi-update', {ssid: $('#ssid').val(), password: $('#password').val()});
+
+        function check_status() {
+           $.get('status', function(data) {
+               console.log(data);
+               if (data.status == 'nothing') {
+                 setTimeout(check_status, 5000);
+               }
+               if (data.status == 'done') {
+                 $("#wifi-status").text(data.result)
+                 checking = false;
+               }
+           });
+        }
+
+        console.log('checking status');
+        if(!checking) {
+            check_status();
+            checking = true;
+        }
       });
     </script>
   </body>
