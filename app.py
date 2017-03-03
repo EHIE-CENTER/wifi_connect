@@ -1,5 +1,4 @@
-# import subprocess
-# from threading import Thread
+import logging
 from multiprocessing import Process, Queue
 from queue import Empty
 import time
@@ -12,6 +11,16 @@ from flask import Flask, jsonify, render_template, send_from_directory, request,
 from flask_socketio import SocketIO, emit
 from wifi import Cell, Scheme
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s:%(threadName)s:%(levelname)s:'
+                           '%(name)s:%(message)s',
+                    handlers=[
+                        logging.handlers.TimedRotatingFileHandler(
+                            'prisms-wifi.log', when='midnight', backupCount=7,
+                            delay=True),
+                        logging.StreamHandler()])
+
+_LOGGER = logging.getLogger(__name__)
 INTERFACE = 'ra0'
 SCHEME = 'prisms'
 
@@ -23,9 +32,9 @@ queue = Queue()
 def restart_sensor_service():
     try:
         output = subprocess.check_output(['systemctl', 'restart', 'sensor.service'])
-        print("Restarted service: {}".format(output))
+        _LOGGER.info("Restarted service: %s", output)
     except subprocess.CalledProcessError as e:
-        print("Failed to restart service: {}".format(e))
+        _LOGGER.exception("Failed to restart service: %s", e)
 
 
 def get_ip_address():
@@ -117,7 +126,7 @@ def handle_wifi_update(data):
 
             restart_sensor_service()
         except Exception as e:
-            print(e)
+            _LOGGER.exception("Exception occurred: %s", e)
             queue.put(('wifi-update',
                        {'message': 'Unable to connect to network. Make sure '
                                    'password is correct.'}))
@@ -130,7 +139,7 @@ def check_processes():
     while True:
         try:
             name, data = queue.get_nowait()
-            print("Emitting {} {}".format(name, data))
+            _LOGGER.debug("Emitting %s %s", name, data)
             socketio.emit(name, data)
         except Empty:
             eventlet.sleep(1)
@@ -140,18 +149,18 @@ if __name__ == "__main__":
     ip_address = get_ip_address()
 
     if ip_address is not None:
-        print("Network already connected")
+        _LOGGER.info("Network already connected")
     else:
-        print("Connecting to old network")
+        _LOGGER.info("Connecting to old network")
         scheme = Scheme.find(INTERFACE, SCHEME)
         if scheme is not None:
             try:
                 scheme.activate()
             except Exception as e:
-                print(e)
+                _LOGGER.exception("Exception while connecting: %s", e)
 
         restart_sensor_service()
 
-    print("Starting web service")
+    _LOGGER.info("Starting web service")
     eventlet.spawn_n(check_processes)
     socketio.run(app, host='0.0.0.0', port=3210)
