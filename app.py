@@ -157,10 +157,11 @@ if __name__ == "__main__":
         if scheme is not None:
             try:
                 scheme.activate()
+                restart_sensor_service()
             except Exception as e:
                 _LOGGER.exception("Exception while connecting: %s", e)
-
-        restart_sensor_service()
+        else:
+            _LOGGER.info("No network configured to connect to")
 
     _LOGGER.info("Starting web service")
     eventlet.spawn_n(check_processes)
