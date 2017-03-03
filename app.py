@@ -20,6 +20,14 @@ socketio = SocketIO(app, logger=True, engineio_logger=True)
 queue = Queue()
 
 
+def restart_sensor_service():
+    try:
+        output = subprocess.check_output(['systemctl', 'restart', 'sensor.service'])
+        print("Restarted service: {}".format(output))
+    except subprocess.CalledProcessError as e:
+        print("Failed to restart service: {}".format(e))
+
+
 def get_ip_address():
     try:
         output = subprocess.check_output(['ip', 'addr', 'show', INTERFACE])
@@ -106,6 +114,8 @@ def handle_wifi_update(data):
             queue.put(('wifi-update', {'message': 'Connected!'}))
             queue.put(('wifi-status',
                        {'message': 'Connected ({})'.format(result.ip_address)}))
+
+            restart_sensor_service()
         except Exception as e:
             print(e)
             queue.put(('wifi-update',
@@ -139,6 +149,8 @@ if __name__ == "__main__":
                 scheme.activate()
             except Exception as e:
                 print(e)
+
+        restart_sensor_service()
 
     print("Starting web service")
     eventlet.spawn_n(check_processes)

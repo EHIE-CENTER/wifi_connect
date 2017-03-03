@@ -1,0 +1,11 @@
+[Unit]
+Description=PRISMS WiFi Setup Interface
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/wifi_connect/
+ExecStart=/root/pyenv/versions/3.5.2/envs/dylos/bin/python app.py
+
+[Install]
+WantedBy=multi-user.target
