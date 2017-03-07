@@ -120,10 +120,11 @@ async def connect(interface):
 
     _LOGGER.debug("Calling ifup")
     cmd = asyncio.create_subprocess_exec('ifup', interface,
-                                         stdout=asyncio.subprocess.PIPE)
+                                         stdout=asyncio.subprocess.PIPE,
+                                         stderr=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
-    result = stdout_data.decode()
+    output = stdout_data.decode()
     matches = bound_ip_re.search(output)
     if matches:
         _LOGGER.debug("Connected: %s", matches.group('ip_address'))
