@@ -6,6 +6,7 @@ import re
 import textwrap
 
 import aiofiles
+from pbkdf2 import PBKDF2
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ interface_file = 'etc/network/interfaces'
 
 
 async def get_ip_address(interface):
+    _LOGGER.debug("Getting IP address")
     cmd = asyncio.create_subprocess_exec('ip', 'addr', 'show', interface,
                                          stdout=asyncio.subprocess.PIPE)
     proc = await cmd
@@ -26,9 +28,12 @@ async def get_ip_address(interface):
     stdout_data = stdout_data.decode()
 
     if 'inet ' not in stdout_data:
+        _LOGGER.debug("No IP address")
         return None
     else:
-        return stdout_data.split('inet ')[1].split("/")[0]
+        ip_address = stdout_data.split('inet ')[1].split("/")[0]
+        _LOGGER.debug("Found IP address: %s", ip_address)
+        return ip_address
 
 
 async def is_connected(interface):
@@ -37,15 +42,18 @@ async def is_connected(interface):
         message = 'Connected ({})'.format(ip_address) \
                   if ip_address is not None else 'Not Connected'
     except Exception as e:
+        _LOGGER.exception("Unable to determine if connected")
         message = 'Unknown'
 
     return message
 
 
 async def get_ssid(interface):
+    _LOGGER.debug("Getting SSID")
     filename = '{}.d/{}.cfg'.format(interface_file, interface)
 
     if not os.path.isfile(filename):
+        _LOGGER.debug("Interface file for %s does not exist", interface)
         return None
 
     async with aiofiles.open(filename) as f:
@@ -53,12 +61,15 @@ async def get_ssid(interface):
         match = ssid_interface_re.search(text)
 
         if match:
+            _LOGGER.debug("Found SSID for interface: %s", match.group(1))
             return match.group(1)
         else:
+            _LOGGER.debug("Could not find SSD for interface")
             return None
 
 
 async def scan(interface):
+    _LOGGER.debug("Scanning for wireless networks")
     cmd = asyncio.create_subprocess_exec('iwlist', interface, 'scan',
                                          stdout=asyncio.subprocess.PIPE)
     stdout_data, stderr_data = await proc.communicate()
@@ -67,6 +78,8 @@ async def scan(interface):
 
 
 async def replace(interface, ssid, password):
+    _LOGGER.debug("Setting new SSID and passkey")
+
     filename = '{}.d/{}.cfg'.format(interface_file, interface)
     async with aiofiles.open(filename, 'w') as f:
         await f.write('auto {}\n'.format(interface))
@@ -76,10 +89,14 @@ async def replace(interface, ssid, password):
 
 
 async def connect(interface):
+    _LOGGER.debug("Connecting")
+
+    _LOGGER.debug("Calling ifdown")
     cmd = asyncio.create_subprocess_exec('ifdown', interface)
     proc = await cmd
     await proc.wait()
 
+    _LOGGER.debug("Calling ifup")
     cmd = asyncio.create_subprocess_exec('ifup', interface,
                                          stdout=asyncio.subprocess.PIPE)
     proc = await cmd
@@ -87,9 +104,11 @@ async def connect(interface):
     result = stdout_data.decode()
     matches = bound_ip_re.search(output)
     if matches:
+        _LOGGER.debug("Connected: %s", matches.group('ip_address'))
         return matches.group('ip_address')
     else:
-        raise ConnectionError("Failed to connect to %r" % self)
+        _LOGGER.debug("Not connected")
+        return None
 
 
 async def update_interfaces():
