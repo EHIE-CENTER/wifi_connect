@@ -52,7 +52,7 @@ async def handle_wifi_scan(sid):
         await sio.emit('wifi-scan', networks)
     except Exception:
         _LOGGER.exception("Exception occurred while scanning")
-        await sio.emit('wifi-scan', ['Error occurred while scanning.'])
+        await sio.emit('wifi-scan', [('Error occurred while scanning.', '')])
 
 
 @sio.on('wifi-update')

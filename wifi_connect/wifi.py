@@ -78,7 +78,7 @@ async def scan(interface):
     networks = stdout_data.decode()
 
     def create_network(network):
-        ssid = ssid_scan_re.find(network).group(1)
+        ssid = ssid_scan_re.search(network).group(1)
 
         if 'Encryption key:on' in network:
             if 'WPA2' in network:
