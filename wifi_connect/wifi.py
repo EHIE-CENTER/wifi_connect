@@ -72,6 +72,7 @@ async def scan(interface):
     _LOGGER.debug("Scanning for wireless networks")
     cmd = asyncio.create_subprocess_exec('iwlist', interface, 'scan',
                                          stdout=asyncio.subprocess.PIPE)
+    proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
     networks = stdout_data.decode()
     return (m.group(1) for m in ssid_scan_re.finditer(networks))
