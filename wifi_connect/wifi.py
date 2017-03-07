@@ -77,15 +77,18 @@ async def scan(interface):
     return (m.group(1) for m in ssid_scan_re.finditer(networks))
 
 
-async def replace(interface, ssid, password):
+async def replace(interface, ssid, passkey):
     _LOGGER.debug("Setting new SSID and passkey")
+
+    if len(passkey) != 64:
+        passkey = PBKDF2(passkey, ssid, 4096).hexread(32)
 
     filename = '{}.d/{}.cfg'.format(interface_file, interface)
     async with aiofiles.open(filename, 'w') as f:
         await f.write('auto {}\n'.format(interface))
         await f.write('iface {} inet dhcp\n'.format(interface))
         await f.write('    wpa-ssid "{}"\n'.format(ssid))
-        await f.write('    wpa-psk  "{}"\n'.format(password))
+        await f.write('    wpa-psk  "{}"\n'.format(passkey))
 
 
 async def connect(interface):
