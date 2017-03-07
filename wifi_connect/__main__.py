@@ -1,6 +1,9 @@
 import asyncio
+import functools
 import logging
 from logging import handlers
+import os
+import signal
 
 from aiohttp import web
 
@@ -16,9 +19,22 @@ logging.basicConfig(level=logging.DEBUG,
                             delay=True),
                         logging.StreamHandler()])
 
+def ask_exit(signame):
+    print("got signal %s: exit" % signame)
+    loop.stop()
+
+loop = asyncio.get_event_loop()
+for signame in ('SIGINT', 'SIGTERM'):
+    loop.add_signal_handler(getattr(signal, signame),
+                            functools.partial(ask_exit, signame))
+
 # Make sure everything is configured correctly
 loop = asyncio.get_event_loop()
 loop.run_until_complete(wifi.update_interfaces())
 
-# Run web app
-web.run_app(app, port=3210)
+try:
+    # Run web app
+    web.run_app(app, port=3210)
+finally:
+    loop.close()
+
