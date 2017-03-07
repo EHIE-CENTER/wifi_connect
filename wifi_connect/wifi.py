@@ -26,6 +26,8 @@ async def get_ip_address(interface):
                                          stdout=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
     stdout_data = stdout_data.decode()
 
     if 'inet ' not in stdout_data:
@@ -114,9 +116,13 @@ async def connect(interface):
     _LOGGER.debug("Connecting")
 
     _LOGGER.debug("Calling ifdown")
-    cmd = asyncio.create_subprocess_exec('ifdown', interface)
+    cmd = asyncio.create_subprocess_exec('ifdown', interface,
+                                         stdout=asyncio.subprocess.PIPE,
+                                         stderr=asyncio.subprocess.PIPE)
     proc = await cmd
-    await proc.wait()
+    stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
 
     _LOGGER.debug("Calling ifup")
     cmd = asyncio.create_subprocess_exec('ifup', interface,
@@ -124,6 +130,8 @@ async def connect(interface):
                                          stderr=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
     output = stderr_data.decode()
     matches = bound_ip_re.search(output)
     if matches:
