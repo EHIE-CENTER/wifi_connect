@@ -71,7 +71,7 @@ async def handle_wifi_update(sid, data):
     try:
         await sio.emit('wifi-update', {'message': 'Looking for network...'})
         networks = await wifi.scan(INTERFACE)
-        await asyncio.sleep(.2)
+        await asyncio.sleep(.5)
         if ssid not in (n.ssid for n in networks):
             await sio.emit('wifi-update', {'message': 'No network named {}'.format(ssid)})
             return
@@ -83,7 +83,7 @@ async def handle_wifi_update(sid, data):
     try:
         await sio.emit('wifi-update', {'message': 'Saving network name and password...'})
         await wifi.replace(INTERFACE, ssid, password)
-        await asyncio.sleep(.2)
+        await asyncio.sleep(.5)
     except Exception:
         _LOGGER.exception("Exception occurred while setting new ssid and password")
         await sio.emit('wifi-update', {'message': 'Error occurred while setting new SSID and password.'})
@@ -91,10 +91,10 @@ async def handle_wifi_update(sid, data):
 
     await sio.emit('wifi-status', {'message': 'Not Connected'})
     await sio.emit('wifi-update', {'message': 'Connecting...'})
-    await asyncio.sleep(.2)
+    await asyncio.sleep(.5)
 
     try:
-        ip_address = await wifi.connect(INTERFACE, ssid)
+        ip_address = await wifi.connect(INTERFACE)
 
         if not ip_address:
             await sio.emit('wifi-update',
