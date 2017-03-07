@@ -52,8 +52,8 @@
       }
     </style>
 
-    <script src="js/jquery-3.1.1.min.js"></script>
-    <script src="js/socket.io.min.js"></script>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="socket.io.min.js"></script>
     <script type="text/javascript">
       var socket = io();
 
@@ -88,13 +88,19 @@
         $('#available-networks').empty();
 
         for (var i = 0; i < data.length; i++) {
-        $('#available-networks').append(
-            '<button type="button" class="list-group-item">' +
-            '<span class="badge">' + data[i][1] + '</span>' +
-            '<span class="ssid">' + data[i][0] + '</span>' +
-            '</button>'
-            );
-        }
+          var ssid = data[i][0];
+          var encryption = data[i][1];
+          if (encryption == null) {
+            encryption = '';
+          }
+
+          $('#available-networks').append(
+              '<button type="button" class="list-group-item">' +
+              '<span class="badge">' + encryption + '</span>' +
+              '<span class="ssid">' + ssid + '</span>' +
+              '</button>'
+              );
+          }
 
         $('#available-networks button').click(function(event) {
             console.log($($(event.currentTarget).children()[1]));
