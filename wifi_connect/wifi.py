@@ -23,7 +23,8 @@ interface_file = '/etc/network/interfaces'
 async def get_ip_address(interface):
     _LOGGER.debug("Getting IP address")
     cmd = asyncio.create_subprocess_exec('ip', 'addr', 'show', interface,
-                                         stdout=asyncio.subprocess.PIPE)
+                                         stdout=asyncio.subprocess.PIPE,
+                                         stderr=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
     _LOGGER.debug("stdout: %s", stdout_data)
@@ -74,9 +75,12 @@ async def get_ssid(interface):
 async def scan(interface):
     _LOGGER.debug("Scanning for wireless networks")
     cmd = asyncio.create_subprocess_exec('iwlist', interface, 'scan',
-                                         stdout=asyncio.subprocess.PIPE)
+                                         stdout=asyncio.subprocess.PIPE,
+                                         stderr=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
     networks = stdout_data.decode()
 
     def create_network(network):
