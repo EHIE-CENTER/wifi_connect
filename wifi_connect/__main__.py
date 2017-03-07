@@ -3,6 +3,7 @@ import logging
 from logging import handlers
 
 from server import app
+import wifi
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s:%(threadName)s:%(levelname)s:'
@@ -13,4 +14,8 @@ logging.basicConfig(level=logging.DEBUG,
                             delay=True),
                         logging.StreamHandler()])
 
+# Make sure everything is configured correctly
+wifi.update_interfaces()
+
+# Run web app
 web.run_app(app)
