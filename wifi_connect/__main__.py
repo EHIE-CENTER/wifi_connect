@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.DEBUG,
                         logging.StreamHandler()])
 
 # Make sure everything is configured correctly
-wifi.update_interfaces()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(wifi.update_interfaces())
 
 # Run web app
-web.run_app(app)
+web.run_app(app, port=3210)

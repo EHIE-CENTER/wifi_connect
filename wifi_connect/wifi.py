@@ -16,7 +16,7 @@ ssid_scan_re = re.compile("ESSID:\"(.*?)\"", re.M)
 ssid_interface_re = re.compile("\\s+wpa-ssid\\s+\"(.*?)\"", re.M)
 bound_ip_re = re.compile(r'^bound to (?P<ip_address>\S+)', flags=re.MULTILINE)
 
-interface_file = 'etc/network/interfaces'
+interface_file = '/etc/network/interfaces'
 
 
 async def get_ip_address(interface):
