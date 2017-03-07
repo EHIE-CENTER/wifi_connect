@@ -47,6 +47,7 @@ async def handle_wifi_get(sid):
 async def handle_wifi_scan(sid):
     try:
         networks = await wifi.scan(INTERFACE)
+        networks = ((n.ssid, n.encryption) for n in networks)
         networks = sorted(networks, key=lambda x: x.lower())
         await sio.emit('wifi-scan', networks)
     except Exception:
