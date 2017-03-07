@@ -10,8 +10,9 @@ from pbkdf2 import PBKDF2
 
 
 _LOGGER = logging.getLogger(__name__)
-Network = namedtuple('Network',
-                     ['ssid', 'encrypted', 'address', 'mode', 'channel', 'signal'])
+Network = namedtuple('Network', ['ssid', 'encryption'])
+
+networks_re = re.compile(r'Cell \d+ - ')
 ssid_scan_re = re.compile("ESSID:\"(.*?)\"", re.M)
 ssid_interface_re = re.compile("\\s+wpa-ssid\\s+\"(.*?)\"", re.M)
 bound_ip_re = re.compile(r'^bound to (?P<ip_address>\S+)', flags=re.MULTILINE)
@@ -75,7 +76,24 @@ async def scan(interface):
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
     networks = stdout_data.decode()
-    return (m.group(1) for m in ssid_scan_re.finditer(networks))
+
+    def create_network(network):
+        ssid = ssid_scan_re.find(network).group(1)
+
+        if 'Encryption key:on' in network:
+            if 'WPA2' in network:
+                encryption = 'wpa2'
+            elif 'WPA' in network:
+                encryption = 'wpa'
+            else:
+                # Encryption is on but not specified
+                encryption = 'wep'
+        else:
+            encryption = None
+
+        return Network(ssid, encryption)
+
+    return (create_network(n) for n in networks_re.split(networks)[1:])
 
 
 async def replace(interface, ssid, passkey):
