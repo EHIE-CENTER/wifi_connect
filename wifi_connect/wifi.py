@@ -124,7 +124,7 @@ async def connect(interface):
                                          stderr=asyncio.subprocess.PIPE)
     proc = await cmd
     stdout_data, stderr_data = await proc.communicate()
-    output = stdout_data.decode()
+    output = stderr_data.decode()
     matches = bound_ip_re.search(output)
     if matches:
         _LOGGER.debug("Connected: %s", matches.group('ip_address'))
