@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from logging import handlers
 
 from aiohttp import web
 import socketio
@@ -8,15 +7,6 @@ import socketio
 import utils
 import wifi
 
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s:%(threadName)s:%(levelname)s:'
-                           '%(name)s:%(message)s',
-                    handlers=[
-                        logging.handlers.TimedRotatingFileHandler(
-                            'prisms-wifi.log', when='midnight', backupCount=7,
-                            delay=True),
-                        logging.StreamHandler()])
 
 _LOGGER = logging.getLogger(__name__)
 INTERFACE = 'ra0'
@@ -48,8 +38,7 @@ async def handle_wifi_get(sid):
 @sio.on('wifi-scan')
 async def handle_wifi_scan(sid):
     networks = await wifi.scan(INTERFACE)
-    networks = ((n.ssid, n.signal) for n in networks)
-    networks = sorted(networks, key=lambda x: x[0].lower())
+    networks = sorted(networks, key=lambda x: x.lower())
 
     await sio.emit('wifi-scan', networks)
 
