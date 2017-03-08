@@ -14,7 +14,11 @@ sio = socketio.AsyncServer()
 app = web.Application()
 sio.attach(app)
 
-app.router.add_static('/', 'static')
+
+async def index(request):
+    """Serve the client-side application."""
+    with open('static/index.html') as f:
+        return web.Response(text=f.read(), content_type='text/html')
 
 
 @sio.on('wifi-status')
@@ -113,3 +117,7 @@ async def handle_wifi_update(sid, data):
                        {'message': 'Connected! An error occurred while '
                                    'restarting sensor service. Please restart'
                                    ' device.'})
+
+
+app.router.add_static('/static', 'static')
+app.router.add_get('/', index)
