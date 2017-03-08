@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/root/wifi_connect/
-ExecStart=/root/pyenv/versions/3.5.2/envs/dylos/bin/python wifi_connect
+ExecStart=/root/pyenv/versions/3.5.2/envs/dylos/bin/python wifi_connect ra0
 
 [Install]
 WantedBy=multi-user.target

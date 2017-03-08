@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import functools
 import logging
@@ -22,6 +23,11 @@ logging.basicConfig(level=logging.DEBUG,
 def ask_exit(signame):
     print("got signal %s: exit" % signame)
     loop.stop()
+
+parser = argparse.ArgumentParser(description='Creates a server to set up wireless SSID and passkey')
+parser.add_argument('interface', help='Wireless interface to use')
+args = parser.parse_args()
+app.interface = args.interface
 
 loop = asyncio.get_event_loop()
 for signame in ('SIGINT', 'SIGTERM'):

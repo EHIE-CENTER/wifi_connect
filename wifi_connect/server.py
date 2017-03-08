@@ -9,8 +9,6 @@ import wifi
 
 
 _LOGGER = logging.getLogger(__name__)
-INTERFACE = 'ra0'
-
 
 sio = socketio.AsyncServer()
 app = web.Application()
@@ -22,7 +20,7 @@ app.router.add_static('/', 'static')
 @sio.on('wifi-status')
 async def handle_wifi_status(sid):
     try:
-        message = await wifi.is_connected(INTERFACE)
+        message = await wifi.is_connected(app.interface)
         await sio.emit('wifi-status', {'message': message})
     except Exception:
         _LOGGER.exception("Exception occurred while getting WiFi status")
@@ -32,7 +30,7 @@ async def handle_wifi_status(sid):
 @sio.on('wifi-get')
 async def handle_wifi_get(sid):
     try:
-        ssid = await wifi.get_ssid(INTERFACE)
+        ssid = await wifi.get_ssid(app.interface)
 
         if ssid is None:
             await sio.emit('wifi-get', {'ssid': ''})
@@ -46,7 +44,7 @@ async def handle_wifi_get(sid):
 @sio.on('wifi-scan')
 async def handle_wifi_scan(sid):
     try:
-        networks = await wifi.scan(INTERFACE)
+        networks = await wifi.scan(app.interface)
         networks = ((n.ssid, n.encryption) for n in networks)
         networks = sorted(networks, key=lambda x: x[0].lower())
         await sio.emit('wifi-scan', networks)
@@ -70,7 +68,7 @@ async def handle_wifi_update(sid, data):
 
     try:
         await sio.emit('wifi-update', {'message': 'Looking for network...'})
-        networks = await wifi.scan(INTERFACE)
+        networks = await wifi.scan(app.interface)
         await asyncio.sleep(.5)
         if ssid not in (n.ssid for n in networks):
             await sio.emit('wifi-update', {'message': 'No network named {}'.format(ssid)})
@@ -82,7 +80,7 @@ async def handle_wifi_update(sid, data):
 
     try:
         await sio.emit('wifi-update', {'message': 'Saving network name and password...'})
-        await wifi.replace(INTERFACE, ssid, password)
+        await wifi.replace(app.interface, ssid, password)
         await asyncio.sleep(.5)
     except Exception:
         _LOGGER.exception("Exception occurred while setting new ssid and password")
@@ -94,7 +92,7 @@ async def handle_wifi_update(sid, data):
     await asyncio.sleep(.5)
 
     try:
-        ip_address = await wifi.connect(INTERFACE)
+        ip_address = await wifi.connect(app.interface)
 
         if not ip_address:
             await sio.emit('wifi-update',
