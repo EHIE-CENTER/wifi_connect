@@ -3,7 +3,6 @@ import asyncio
 import functools
 import logging
 from logging import handlers
-import os
 import signal
 
 from aiohttp import web
@@ -15,16 +14,19 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s:%(threadName)s:%(levelname)s:'
                            '%(name)s:%(message)s',
                     handlers=[
-                        logging.handlers.TimedRotatingFileHandler(
+                        handlers.TimedRotatingFileHandler(
                             'prisms-wifi.log', when='midnight', backupCount=7,
                             delay=True),
                         logging.StreamHandler()])
+
 
 def ask_exit(signame):
     print("got signal %s: exit" % signame)
     loop.stop()
 
-parser = argparse.ArgumentParser(description='Creates a server to set up wireless SSID and passkey')
+
+parser = argparse.ArgumentParser(
+    description='Creates a server to set up wireless SSID and passkey')
 parser.add_argument('interface', help='Wireless interface to use')
 args = parser.parse_args()
 app.interface = args.interface
@@ -43,4 +45,3 @@ try:
     web.run_app(app, port=3210)
 finally:
     loop.close()
-

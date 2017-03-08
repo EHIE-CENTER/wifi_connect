@@ -6,7 +6,9 @@ _LOGGER = logging.getLogger(__name__)
 
 async def restart_sensor_service():
     try:
-        cmd = asyncio.create_subprocess_exec('systemctl', 'restart', 'sensor.service',
+        cmd = asyncio.create_subprocess_exec('systemctl',
+                                             'restart',
+                                             'sensor.service',
                                              stdout=asyncio.subprocess.PIPE,
                                              stderr=asyncio.subprocess.PIPE)
         proc = await cmd

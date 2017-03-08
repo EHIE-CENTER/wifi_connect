@@ -3,7 +3,6 @@ from collections import namedtuple
 import logging
 import os
 import re
-import textwrap
 
 import aiofiles
 from pbkdf2 import PBKDF2
@@ -184,5 +183,3 @@ async def update_interfaces():
     async with aiofiles.open(interface_file, 'a+') as f:
         await f.write('\n{}\n'.format(config_line))
         _LOGGER.debug("Adding line to interface file")
-
-
