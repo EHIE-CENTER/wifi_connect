@@ -102,18 +102,32 @@ async def scan(interface):
     return (create_network(n) for n in networks_re.split(networks)[1:])
 
 
-async def replace(interface, ssid, passkey):
+async def replace(interface, network, passkey):
     _LOGGER.debug("Setting new SSID and passkey")
+    lines = ['auto {}\n'.format(interface),
+             'iface {} inet dhcp\n'.format(interface)]
 
-    if len(passkey) != 64:
-        passkey = PBKDF2(passkey, ssid, 4096).hexread(32)
+    if network.encryption.startswith('wpa'):
+        if len(passkey) != 64:
+            passkey = PBKDF2(passkey, network.ssid, 4096).hexread(32)
+
+        lines.append('    wpa-ssid "{}"\n'.format(network.ssid))
+        lines.append('    wpa-psk  "{}"\n'.format(passkey))
+
+    elif network.encryption == 'wep':
+        if len(passkey) in (5, 13, 16, 29):
+            passkey = "s:" + passkey
+
+        lines.append('    wireless-essid "{}"'.format(network.ssid))
+        lines.append('    wireless-key   "{}"'.format(passkey))
+
+    else:
+        raise NotImplementedError
 
     filename = '{}.d/{}.cfg'.format(interface_file, interface)
     async with aiofiles.open(filename, 'w') as f:
-        await f.write('auto {}\n'.format(interface))
-        await f.write('iface {} inet dhcp\n'.format(interface))
-        await f.write('    wpa-ssid "{}"\n'.format(ssid))
-        await f.write('    wpa-psk  "{}"\n'.format(passkey))
+        for line in lines:
+            await f.write(line)
 
 
 async def connect(interface):

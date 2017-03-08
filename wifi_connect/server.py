@@ -73,8 +73,9 @@ async def handle_wifi_update(sid, data):
     try:
         await sio.emit('wifi-update', {'message': 'Looking for network...'})
         networks = await wifi.scan(app.interface)
+        networks = [n for n in networks if n.ssid == ssid]
         await asyncio.sleep(.5)
-        if ssid not in (n.ssid for n in networks):
+        if len(networks) == 0:
             await sio.emit('wifi-update', {'message': 'No network named {}'.format(ssid)})
             return
     except Exception:
@@ -82,10 +83,22 @@ async def handle_wifi_update(sid, data):
         await sio.emit('wifi-update', {'message': 'Error occurred while scanning.'})
         return
 
+    # Filter out networks that have incompatible security
+    networks = [n for n in networks
+                if n.encryption.startswith('wpa') or n.encryption == 'wep']
+    if len(networks) == 0:
+        _LOGGER.warning("No networks that have correct encryption")
+        await sio.emit('wifi-update', {'message': 'Select network with WPA/2 or WEP security'})
+        return
+
     try:
         await sio.emit('wifi-update', {'message': 'Saving network name and password...'})
-        await wifi.replace(app.interface, ssid, password)
+        await wifi.replace(app.interface, networks[0], password)
         await asyncio.sleep(.5)
+    except NotImplementedError:
+        _LOGGER.exception("Unknown security protocol was used")
+        await sio.emit('wifi-update', {'message': 'Only select WEP and WPA/2 security'})
+        return
     except Exception:
         _LOGGER.exception("Exception occurred while setting new ssid and password")
         await sio.emit('wifi-update', {'message': 'Error occurred while setting new SSID and password.'})
