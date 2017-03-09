@@ -88,11 +88,11 @@ async def handle_wifi_update(sid, data):
 
     # Filter out networks that have incompatible security
     networks = [n for n in networks
-                if n.encryption.startswith('wpa') or n.encryption == 'wep']
+                if n.encryption and n.encryption.startswith('wpa')]
     if len(networks) == 0:
         _LOGGER.warning("No networks that have correct encryption")
         await sio.emit('wifi-update',
-                       {'message': 'Select network with WPA/2 or WEP '
+                       {'message': 'Select network with WPA or WPA2'
                                    'security'})
         return
 
