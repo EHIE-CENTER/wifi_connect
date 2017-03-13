@@ -104,7 +104,7 @@ async def handle_wifi_update(sid, data):
     except NotImplementedError:
         _LOGGER.exception("Unknown security protocol was used")
         await sio.emit('wifi-update',
-                       {'message': 'Only select WEP and WPA/2 security'})
+                       {'message': 'Only select WPA or WPA2 security'})
         return
     except Exception:
         _LOGGER.exception(
