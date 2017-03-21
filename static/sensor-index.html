@@ -32,7 +32,10 @@
 
           <div class="input-group">
             <span class="input-group-addon" id="password-label">Password</span>
-            <input type="text" class="form-control" id="password" placeholder="Loading..." aria-describedby="password">
+            <input type="password" class="form-control" id="password" placeholder="Loading..." aria-describedby="password">
+            <span class="input-group-btn">
+              <button class="btn btn-default" id="password-show-button" type="button">Show</button>
+            </span>
           </div>
 
           <button type="button" id="wifi-button" class="btn btn-default">
@@ -124,6 +127,26 @@
       $("#wifi-button").click(function() {
         $("#wifi-status").text('Updating...');
         socket.emit('wifi-update', {ssid: $('#ssid').val(), password: $('#password').val()});
+      });
+
+      $("#password-show-button").click(function(event) {
+        // Change input type
+        var input = $('#password');
+        if (input.attr("type") == "password") {
+          input.attr("type", "text");
+        }
+        else {
+          input.attr("type", "password");
+        }
+
+        // Change label
+        var button = $(event.currentTarget);
+        if (button.text() == "Show") {
+          button.text("Hide");
+        }
+        else {
+          button.text("Show");
+        }
       });
     </script>
   </body>
