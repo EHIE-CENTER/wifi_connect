@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Dylos Setup</title>
+
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <h2>WiFi Configuration</h2>
+        <div class="col-sm-6">
+          <p>Available Networks:</p>
+          <ul class="list-group" id="available-networks">
+            <button type="button" class="list-group-item">Loading...</button>
+          </ul>
+      </div>
+      <div class="col-sm-6">
+          <div class="input-group">
+            <span>Status: </span><span id="wifi-connection-status">Loading...</span>
+          </div>
+
+          <div class="input-group">
+            <span class="input-group-addon" id="ssid-label">Network Name</span>
+            <input type="text" class="form-control" id="ssid" placeholder="Loading..." aria-describedby="ssid">
+          </div>
+
+          <div class="input-group">
+            <span class="input-group-addon" id="password-label">Password</span>
+            <input type="text" class="form-control" id="password" placeholder="Loading..." aria-describedby="password">
+          </div>
+
+          <button type="button" id="wifi-button" class="btn btn-default">
+            Update
+          </button>
+          <div id="wifi-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <style type="text/css">
+      .input-group {
+        margin-bottom: 10px;
+      }
+      #wifi-status {
+        margin: 10px 0;
+      }
+    </style>
+
+    <script src="/static/jquery-3.1.1.min.js"></script>
+    <script src="/static/socket.io.min.js"></script>
+    <script type="text/javascript">
+      var socket = io();
+
+      // Get the status of the WiFi
+      socket.emit('wifi-status');
+
+      // Get the current WiFi SSID and password
+      socket.emit('wifi-get');
+
+      // Get the available networks
+      socket.emit('wifi-scan');
+
+      socket.on('wifi-get', function(data) {
+        $('#ssid').attr("placeholder", "");
+        $('#password').attr("placeholder", "");
+
+        if (!$('#ssid').val()) {
+          $('#ssid').val(data.ssid);
+        }
+
+        if (!$('#password').val()) {
+          $('#password').val(data.password);
+        }
+      });
+
+      socket.on('wifi-status', function(data) {
+        $('#wifi-connection-status').text(data.message);
+      });
+
+      socket.on('wifi-scan', function(data) {
+        // Clear out old items
+        $('#available-networks').empty();
+
+        for (var i = 0; i < data.length; i++) {
+          var ssid = data[i][0];
+          var encryption = data[i][1];
+          if (encryption == null) {
+            encryption = '';
+          }
+
+          $('#available-networks').append(
+              '<button type="button" class="list-group-item">' +
+              '<span class="badge">' + encryption + '</span>' +
+              '<span class="ssid">' + ssid + '</span>' +
+              '</button>'
+              );
+          }
+
+        $('#available-networks button').click(function(event) {
+            console.log($($(event.currentTarget).children()[1]));
+            $('#ssid').val($($(event.currentTarget).children()[1]).text());
+        });
+      });
+
+      socket.on('wifi-update', function (data) {
+        $("#wifi-status").text(data.message)
+      });
+
+      socket.on('reconnect', function(data) {
+        // Update UI
+        $("#wifi-status").text("")
+        $('#wifi-connection-status').text("Loading...");
+        socket.emit('wifi-status');
+        socket.emit('wifi-get');
+        socket.emit('wifi-scan');
+      });
+
+      $("#wifi-button").click(function() {
+        $("#wifi-status").text('Updating...');
+        socket.emit('wifi-update', {ssid: $('#ssid').val(), password: $('#password').val()});
+      });
+    </script>
+  </body>
+</html>
+
