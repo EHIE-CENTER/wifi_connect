@@ -4,7 +4,7 @@ import logging
 from aiohttp import web
 import socketio
 
-from send_wifi import main as send_wifi
+# from send_wifi import main as send_wifi
 
 import utils
 import wifi
@@ -17,6 +17,7 @@ app = web.Application()
 sio.attach(app)
 
 broadcasting = False
+pool = ThreadPoolExecutor(max_workers=1)
 
 
 async def index(request):
@@ -24,33 +25,84 @@ async def index(request):
     with open('static/gateway-index.html') as f:
         return web.Response(text=f.read(), content_type='text/html')
 
+@sio.on('status')
+async def status(sid):
+    text = 'Broadcasting' if broadcasting else 'Not broadcasting'
+    await sio.emit('status',
+                   {'message': text},
+                   room=sid)
 
 @sio.on('broadcast-start')
 async def start_broadcast(sid, data):
     global broadcasting
 
     if 'ssid' not in data or len(data['ssid']) == 0:
-        await sio.emit('wifi-update',
-                       {'message': 'Network name must be provided'})
+        await sio.emit('broadcast-update',
+                       {'message': 'Network name must be provided'},
+                       room=sid)
         return
 
     if 'password' not in data or len(data['password']) == 0:
-        await sio.emit('wifi-update', {'message': 'Password must be provided'})
+        await sio.emit('broadcast-update',
+                       {'message': 'Password must be provided'},
+                       room=sid)
+        return
+
+    if broadcasting:
+        await sio.emit('broadcast-update',
+                       {'message': 'Already broadcasting'},
+                       room=sid)
         return
 
     ssid = data['ssid']
     password = data['password']
     broadcasting = True
 
-    while broadcasting:
-        # TODO: Run in thread
-        send_wifi(ssid, password)
+    await sio.emit('broadcast-update',
+                   {'message': 'Starting...'},
+                   room=sid)
+    await status(sid)
+
+    async def broadcast():
+        while broadcasting:
+            await send_wifi_info(ssid, password)
+            _LOGGER.debug("Waiting...")
+            await asyncio.sleep(15)
+
+        await sio.emit('broadcast-update',
+                       {'message': 'Stopped'},
+                       room=sid)
+
+    asyncio.ensure_future(broadcast())
 
 
-@sio.on('broadcast-start')
-async def stop_broadcast(sid, data):
+async def send_wifi_info(ssid, password):
+    _LOGGER.debug("Sending WiFi information")
+    cmd = asyncio.create_subprocess_exec(
+        '/usr/local/var/pyenv/versions/unassociated_transfer-2/bin/python',
+        '/Users/philipbl/Projects/unassociated_transfer/send_wifi.py', ssid, password,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE)
+    proc = await cmd
+    stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
+    _LOGGER.debug("-" * 80)
+    _LOGGER.debug("Done sending WiFi information")
+
+
+@sio.on('broadcast-stop')
+async def stop_broadcast(sid):
+    global broadcasting
+
+    if not broadcasting:
+        return
+
     broadcasting = False
-    await sio.emit('wifi-update', {'message': 'Stopping'})
+    await sio.emit('broadcast-update',
+                   {'message': 'Stopping...'},
+                   room=sid)
+    await status(sid)
 
 
 app.router.add_static('/static', 'static')

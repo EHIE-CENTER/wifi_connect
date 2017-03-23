@@ -22,10 +22,10 @@ def ask_exit(signame):
     loop.stop()
 
 # Set up the loop
-loop = asyncio.get_event_loop()
-for signame in ('SIGINT', 'SIGTERM'):
-    loop.add_signal_handler(getattr(signal, signame),
-                            functools.partial(ask_exit, signame))
+# loop = asyncio.get_event_loop()
+# for signame in ('SIGINT', 'SIGTERM'):
+#     loop.add_signal_handler(getattr(signal, signame),
+#                             functools.partial(ask_exit, signame))
 
 
 def run_gateway(args):
@@ -35,6 +35,7 @@ def run_gateway(args):
 
 def run_sensor(args):
     import wifi
+    import sensor_client
     from sensor_server import app
 
     app.interface = args.interface
@@ -43,6 +44,7 @@ def run_sensor(args):
     loop.run_until_complete(wifi.update_interfaces())
 
     # Start process to listen for gateway broadcasts
+    asyncio.ensure_future(sensor_client.start())
 
     # Start server
     web.run_app(app, port=3210)
@@ -50,7 +52,9 @@ def run_sensor(args):
 
 parser = argparse.ArgumentParser(
     description='Application to help sensors connect to WiFi')
-subparsers = parser.add_subparsers(help='Which device to run application on')
+subparsers = parser.add_subparsers(help='Which device to run application on',
+                                   dest='type')
+subparsers.required = True
 
 parser_sensor = subparsers.add_parser('sensor')
 parser_sensor.add_argument('interface', help='Wireless interface to use')
@@ -60,5 +64,4 @@ parser_gateway = subparsers.add_parser('gateway')
 parser_gateway.set_defaults(func=run_gateway)
 
 args = parser.parse_args()
-print(args)
 args.func(args)
