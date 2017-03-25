@@ -26,6 +26,7 @@ async def start(interface):
 
         async with MonitorMode(interface) as monitor:
             for channel in CHANNELS:
+                _LOGGER.debug("Setting channel to %s", channel)
                 await monitor.set_channel(channel)
 
                 wifi_info = await receive_wifi_info(interface)
@@ -43,7 +44,8 @@ def stop():
 
 
 async def connect(interface):
-    await wifi.connect(interface)
+    # await wifi.connect(interface)
+    pass
 
 
 async def connected(interface):
@@ -60,11 +62,11 @@ async def has_wifi_credentials(interface):
 
 
 async def save_wifi_credentials(interface, ssid, password):
-    await wifi.replace(interface, ssid, password)
+    # await wifi.replace(interface, ssid, password)
+    pass
 
 
 async def receive_wifi_info(interface):
-    # # TODO: Timeout!
     _LOGGER.debug("Receiving WiFi Info")
     cmd = asyncio.create_subprocess_exec(
         'echo', 'test:test',
@@ -96,8 +98,15 @@ class MonitorMode():
         self.interface = interface
 
     async def set_channel(self, channel):
-        _LOGGER.debug("Setting channel to %s", channel)
-        await asyncio.sleep(1)
+        cmd = asyncio.create_subprocess_exec(
+            'iwconfig', interface, 'channel', channel,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        proc = await cmd
+        stdout_data, stderr_data = await proc.communicate()
+
+        _LOGGER.debug("stdout: %s", stdout_data)
+        _LOGGER.debug("stderr: %s", stderr_data)
 
     async def __aenter__(self):
         _LOGGER.debug("Entering monitor mode")
