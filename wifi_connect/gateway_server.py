@@ -11,13 +11,13 @@ import wifi
 
 
 _LOGGER = logging.getLogger(__name__)
+BROADCAST_WAIT_TIME = 15
 
 sio = socketio.AsyncServer()
 app = web.Application()
 sio.attach(app)
 
 broadcasting = False
-pool = ThreadPoolExecutor(max_workers=1)
 
 
 async def index(request):
@@ -82,7 +82,7 @@ async def send_wifi_info(ssid, password):
             'python',
             '/home/pi/unassociated_transfer/send_wifi.py',
             '-l', '.6',
-            '-s', send_flag,
+            '-s', str(send_flag),
             ssid, password,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
@@ -93,11 +93,15 @@ async def send_wifi_info(ssid, password):
         _LOGGER.debug("-" * 80)
         _LOGGER.debug("Done sending WiFi information")
 
+        # Exit early if done broadcasting
+        if not broadcasting:
+            break
+
         # Switch between 0 and 1
         send_flag = 1 - send_flag
 
         _LOGGER.debug("Waiting...")
-        await asyncio.sleep(15)
+        await asyncio.sleep(BROADCAST_WAIT_TIME)
 
 
 @sio.on('broadcast-stop')
