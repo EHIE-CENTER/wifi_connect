@@ -64,11 +64,7 @@ async def start_broadcast(sid, data):
     await status(sid)
 
     async def broadcast():
-        while broadcasting:
-            await send_wifi_info(ssid, password)
-            _LOGGER.debug("Waiting...")
-            await asyncio.sleep(15)
-
+        await send_wifi_info(ssid, password)
         await sio.emit('broadcast-update',
                        {'message': 'Stopped'},
                        room=sid)
@@ -77,18 +73,31 @@ async def start_broadcast(sid, data):
 
 
 async def send_wifi_info(ssid, password):
-    _LOGGER.debug("Sending WiFi information")
-    cmd = asyncio.create_subprocess_exec(
-        '/usr/local/var/pyenv/versions/unassociated_transfer-2/bin/python',
-        '/Users/philipbl/Projects/unassociated_transfer/send_wifi.py', ssid, password,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
-    proc = await cmd
-    stdout_data, stderr_data = await proc.communicate()
-    _LOGGER.debug("stdout: %s", stdout_data)
-    _LOGGER.debug("stderr: %s", stderr_data)
-    _LOGGER.debug("-" * 80)
-    _LOGGER.debug("Done sending WiFi information")
+    send_flag = 0
+
+    while broadcasting:
+        _LOGGER.debug("Sending WiFi information")
+        # TODO: Generalize this
+        cmd = asyncio.create_subprocess_exec(
+            'python',
+            '/home/pi/unassociated_transfer/send_wifi.py',
+            '-l', '.6',
+            '-s', send_flag,
+            ssid, password,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        proc = await cmd
+        stdout_data, stderr_data = await proc.communicate()
+        _LOGGER.debug("stdout: %s", stdout_data)
+        _LOGGER.debug("stderr: %s", stderr_data)
+        _LOGGER.debug("-" * 80)
+        _LOGGER.debug("Done sending WiFi information")
+
+        # Switch between 0 and 1
+        send_flag = 1 - send_flag
+
+        _LOGGER.debug("Waiting...")
+        await asyncio.sleep(15)
 
 
 @sio.on('broadcast-stop')
