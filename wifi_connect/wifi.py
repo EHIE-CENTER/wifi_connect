@@ -158,7 +158,7 @@ async def connect(interface):
         return None
 
 
-async def inteface_configured(interface):
+async def interface_configured(interface):
     folder = '{}.d'.format(interface_file)
     if not os.path.exists(folder):
         return False

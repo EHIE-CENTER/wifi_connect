@@ -1,4 +1,5 @@
 import asyncio
+from collections import namedtuple
 from contextlib import contextmanager
 import logging
 
@@ -7,10 +8,11 @@ import wifi
 logging.basicConfig(level=logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
-CHANNELS = range(1, 12)
+CHANNELS = range(1, 2)
 CONNECTED_WAIT_TIME = 5 * 60
-RECEIVE_WAIT_TIME = 5
+RECEIVE_WAIT_TIME = 30
 RUNNING = True
+Network = namedtuple('Network', ['ssid', 'encryption'])
 
 
 async def start(interface):
@@ -30,12 +32,17 @@ async def start(interface):
                 await monitor.set_channel(channel)
 
                 wifi_info = await receive_wifi_info(interface)
+                _LOGGER.debug("Received wifi info: %s", wifi_info)
                 if wifi_info is not None:
-                    await save_wifi_credentials(wifi_info)
+                    ssid, password = wifi_info
+                    _LOGGER.debug("Saving WiFi credentials")
+                    await save_wifi_credentials(interface, ssid, password)
                     break
 
         if await has_wifi_credentials(interface):
-            await connect()
+            _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
+            await asyncio.sleep(5)
+            # await connect()
 
 
 def stop():
@@ -58,21 +65,20 @@ async def connected(interface):
 
 
 async def has_wifi_credentials(interface):
-    return await inteface_configured(interface)
+    return await wifi.interface_configured(interface)
 
 
 async def save_wifi_credentials(interface, ssid, password):
-    # await wifi.replace(interface, ssid, password)
-    pass
+    network = Network(ssid, 'wpa')
+    await wifi.replace(interface, network, password)
 
 
 async def receive_wifi_info(interface):
     _LOGGER.debug("Receiving WiFi Info")
     cmd = asyncio.create_subprocess_exec(
-        'echo', 'test:test',
-        # '/usr/local/var/pyenv/versions/unassociated_transfer-2/bin/python',
-        # '/Users/philipbl/Projects/unassociated_transfer/receive_wifi.py',
-        # interface,
+        '/usr/bin/python',
+        '/root/unassociated_transfer/receive_wifi.py',
+        interface,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE)
     proc = await cmd
@@ -84,8 +90,7 @@ async def receive_wifi_info(interface):
         _LOGGER.debug("stderr: %s", stderr_data)
 
         data = stdout_data.decode()
-        _LOGGER.debug("Received wifi info: %s", data)
-        ssid, password = data.split(':')
+        ssid, password = data.strip().split(':')
 
         return ssid, password
     except asyncio.TimeoutError:
@@ -99,7 +104,7 @@ class MonitorMode():
 
     async def set_channel(self, channel):
         cmd = asyncio.create_subprocess_exec(
-            'iwconfig', interface, 'channel', channel,
+            'iwconfig', self.interface, 'channel', str(channel),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
         proc = await cmd
@@ -114,7 +119,3 @@ class MonitorMode():
 
     async def __aexit__(self, exc_type, exc, tb):
         _LOGGER.debug("Exiting monitor mode")
-
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(start('wlan0'))

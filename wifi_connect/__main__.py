@@ -22,7 +22,7 @@ def ask_exit(signame):
     loop.stop()
 
 # Set up the loop
-# loop = asyncio.get_event_loop()
+loop = asyncio.get_event_loop()
 # for signame in ('SIGINT', 'SIGTERM'):
 #     loop.add_signal_handler(getattr(signal, signame),
 #                             functools.partial(ask_exit, signame))
@@ -44,10 +44,12 @@ def run_sensor(args):
     loop.run_until_complete(wifi.update_interfaces())
 
     # Start process to listen for gateway broadcasts
-    asyncio.ensure_future(sensor_client.start())
+    asyncio.ensure_future(sensor_client.start(args.interface))
+
+    loop.run_forever()
 
     # Start server
-    web.run_app(app, port=3210)
+    # web.run_app(app, port=3210)
 
 
 parser = argparse.ArgumentParser(
