@@ -20,25 +20,12 @@ async def start(interface):
     _LOGGER.debug("Starting...")
     while RUNNING:
         if await connected(interface):
-            _LOGGER.debug("Already connected. Waiting %s before checking again.",
+            _LOGGER.debug("Already connected. Waiting %s seconds before checking again.",
                           CONNECTED_WAIT_TIME)
             await asyncio.sleep(CONNECTED_WAIT_TIME)
             continue
 
         _LOGGER.debug("Not connected")
-
-        # Try with old credentials first
-        if await has_wifi_credentials(interface):
-            _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
-            result = await connect(interface)
-
-            if result is not None:
-                _LOGGER.debug("Connected (%s)! Waiting %s before checking again",
-                              result,
-                              CONNECTED_WAIT_TIME)
-                await asyncio.sleep(CONNECTED_WAIT_TIME)
-            else:
-                _LOGGER.debug("Not connected!")
 
         _LOGGER.debug("Could not connect so looking for new WiFi credentials...")
         async with MonitorMode(interface) as monitor:
@@ -62,7 +49,7 @@ async def start(interface):
             else:
                 _LOGGER.debug("Not connected!")
 
-        _LOGGER.debug("Waiting before trying again")
+        _LOGGER.debug("Waiting {} seconds before trying again", TRY_WAIT_TIME)
         await asyncio.sleep(TRY_WAIT_TIME)
 
 
