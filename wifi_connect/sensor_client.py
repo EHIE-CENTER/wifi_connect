@@ -30,7 +30,7 @@ async def start(interface):
         # Try with old credentials first
         if await has_wifi_credentials(interface):
             _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
-            result = await connect()
+            result = await connect(interface)
 
             if result is not None:
                 _LOGGER.debug("Connected (%s)! Waiting %s before checking again",
@@ -56,7 +56,7 @@ async def start(interface):
 
         if await has_wifi_credentials(interface):
             _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
-            result = await connect()
+            result = await connect(interface)
             if result is not None:
                 _LOGGER.debug("Connected (%s)!", result)
             else:
