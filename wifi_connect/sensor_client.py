@@ -25,9 +25,7 @@ async def start(interface):
             await asyncio.sleep(CONNECTED_WAIT_TIME)
             continue
 
-        _LOGGER.debug("Not connected")
-
-        _LOGGER.debug("Could not connect so looking for new WiFi credentials...")
+        _LOGGER.debug("Not connected. Looking for new WiFi credentials...")
         async with MonitorMode(interface) as monitor:
             for channel in CHANNELS:
                 _LOGGER.debug("Setting channel to %s", channel)
