@@ -81,7 +81,7 @@ async def send_wifi_info(ssid, password):
         cmd = asyncio.create_subprocess_exec(
             'python',
             '/home/pi/unassociated_transfer/send_wifi.py',
-            '-l', '.6',
+            '-l', '.8',
             '-s', str(send_flag),
             ssid, password,
             stdout=asyncio.subprocess.PIPE,

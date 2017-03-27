@@ -160,16 +160,13 @@ async def connect(interface):
 
 async def interface_configured(interface):
     folder = '{}.d'.format(interface_file)
-    if not os.path.exists(folder):
+    file = os.path.join(folder, '{}.cfg'.format(interface))
+    if not os.path.exists(file):
         return False
 
-    interface_file = os.path.join(folder, '{}.cfg'.format(interface))
-    if not os.path.exists(interface_file):
-        return False
-
-    async with aiofiles.open(interface_file) as f:
+    async with aiofiles.open(file) as f:
         text = await f.read()
-        if b'ssid' in text and b'psk' in text:
+        if 'ssid' in text and 'psk' in text:
             return True
 
     return False

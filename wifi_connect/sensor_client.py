@@ -8,9 +8,10 @@ import wifi
 logging.basicConfig(level=logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
-CHANNELS = range(1, 2)
+CHANNELS = range(1, 12)
 CONNECTED_WAIT_TIME = 5 * 60
 RECEIVE_WAIT_TIME = 30
+TRY_WAIT_TIME = 1 * 60
 RUNNING = True
 Network = namedtuple('Network', ['ssid', 'encryption'])
 
@@ -26,6 +27,20 @@ async def start(interface):
 
         _LOGGER.debug("Not connected")
 
+        # Try with old credentials first
+        if await has_wifi_credentials(interface):
+            _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
+            result = await connect()
+
+            if result is not None:
+                _LOGGER.debug("Connected (%s)! Waiting %s before checking again",
+                              result,
+                              CONNECTED_WAIT_TIME)
+                await asyncio.sleep(CONNECTED_WAIT_TIME)
+            else:
+                _LOGGER.debug("Not connected!")
+
+        _LOGGER.debug("Could not connect so looking for new WiFi credentials...")
         async with MonitorMode(interface) as monitor:
             for channel in CHANNELS:
                 _LOGGER.debug("Setting channel to %s", channel)
@@ -41,8 +56,14 @@ async def start(interface):
 
         if await has_wifi_credentials(interface):
             _LOGGER.debug("We have WiFi credentials, so we are trying to connect")
-            await asyncio.sleep(5)
-            # await connect()
+            result = await connect()
+            if result is not None:
+                _LOGGER.debug("Connected (%s)!", result)
+            else:
+                _LOGGER.debug("Not connected!")
+
+        _LOGGER.debug("Waiting before trying again")
+        await asyncio.sleep(TRY_WAIT_TIME)
 
 
 def stop():
@@ -51,8 +72,7 @@ def stop():
 
 
 async def connect(interface):
-    # await wifi.connect(interface)
-    pass
+    return await wifi.connect(interface)
 
 
 async def connected(interface):
@@ -115,7 +135,26 @@ class MonitorMode():
 
     async def __aenter__(self):
         _LOGGER.debug("Entering monitor mode")
+        cmd = asyncio.create_subprocess_exec(
+            'airmon-ng', 'start', self.interface,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        proc = await cmd
+        stdout_data, stderr_data = await proc.communicate()
+
+        _LOGGER.debug("stdout: %s", stdout_data)
+        _LOGGER.debug("stderr: %s", stderr_data)
+
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         _LOGGER.debug("Exiting monitor mode")
+        cmd = asyncio.create_subprocess_exec(
+            'airmon-ng', 'stop', self.interface,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        proc = await cmd
+        stdout_data, stderr_data = await proc.communicate()
+
+        _LOGGER.debug("stdout: %s", stdout_data)
+        _LOGGER.debug("stderr: %s", stderr_data)
