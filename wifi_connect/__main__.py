@@ -46,10 +46,8 @@ def run_sensor(args):
     # Start process to listen for gateway broadcasts
     asyncio.ensure_future(sensor_client.start(args.interface))
 
-    loop.run_forever()
-
     # Start server
-    # web.run_app(app, port=3210)
+    web.run_app(app, port=3210)
 
 
 parser = argparse.ArgumentParser(
