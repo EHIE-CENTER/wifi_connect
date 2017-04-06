@@ -11,7 +11,7 @@ import wifi
 
 
 _LOGGER = logging.getLogger(__name__)
-BROADCAST_WAIT_TIME = 15
+BROADCAST_WAIT_TIME = 2
 
 sio = socketio.AsyncServer()
 app = web.Application()
