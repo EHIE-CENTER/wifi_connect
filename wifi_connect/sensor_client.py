@@ -54,6 +54,8 @@ async def start(interface):
                 _LOGGER.debug("Pinging gateway")
                 requests.post("http://gateway.local:3210/ping",
                               data={'sensor': hostname})
+                _LOGGER.debug("Restarting service")
+                await restart_sensor_service()
             else:
                 _LOGGER.debug("Not connected!")
 
