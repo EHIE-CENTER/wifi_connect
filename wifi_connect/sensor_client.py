@@ -15,6 +15,10 @@ TRY_WAIT_TIME = 1 * 60
 RUNNING = True
 Network = namedtuple('Network', ['ssid', 'encryption'])
 
+_LOGGER.info("Getting host name")
+hostname = socket.gethostname()
+_LOGGER.info("Hostname: %s", hostname)
+
 
 async def start(interface):
     _LOGGER.debug("Starting...")
@@ -44,10 +48,13 @@ async def start(interface):
             result = await connect(interface)
             if result is not None:
                 _LOGGER.debug("Connected (%s)!", result)
+                _LOGGER.debug("Pinging gateway")
+                request.post("http://gateway.local:3210/ping",
+                             data={'sensor': hostname})
             else:
                 _LOGGER.debug("Not connected!")
 
-        _LOGGER.debug("Waiting {} seconds before trying again", TRY_WAIT_TIME)
+        _LOGGER.debug("Waiting %s seconds before trying again", TRY_WAIT_TIME)
         await asyncio.sleep(TRY_WAIT_TIME)
 
 

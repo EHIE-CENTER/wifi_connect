@@ -32,10 +32,10 @@ async def sensor_ping(request):
         return web.Response(text='Not broadcasting', content_type='text')
     data = await request.post()
 
-    if 'num_sensors' not in data:
-        return web.Response(text='Must have num_sensors', content_type='text')
+    if 'sensor' not in data:
+        return web.Response(text='Must have sensor field', content_type='text')
 
-    sensor_queue.put_nowait(int(data['num_sensors']))
+    sensor_queue.put_nowait(data['sensor'])
     return web.Response(text='Sensor has been added', content_type='text')
 
 
@@ -90,6 +90,7 @@ async def start_broadcast(sid, data):
 
 async def broadcast(ssid, password, expected_sensors, sid):
     global broadcasting
+    found_sensors = set()
     # Something that keeps track of how long its beens sending and increases FEC
 
     send_flag = 0
@@ -99,12 +100,12 @@ async def broadcast(ssid, password, expected_sensors, sid):
         # Switch between 0 and 1
         send_flag = 1 - send_flag
 
-        _LOGGER.debug("Waiting...")
         for i in range(BROADCAST_WAIT_TIME):
+            _LOGGER.debug("Waiting (%s)...", i)
             if not broadcasting:
                 break
 
-            await check_for_sensors(expected_sensors, sid)
+            await check_for_sensors(expected_sensors, found_sensors, sid)
             await asyncio.sleep(1)
 
     await sio.emit('broadcast-update',
@@ -132,17 +133,17 @@ async def send_wifi_info(ssid, password, send_flag, possible_loss):
     _LOGGER.debug("Done sending WiFi information")
 
 
-async def check_for_sensors(expected_sensors, sid):
+async def check_for_sensors(expected_sensors, found_sensors, sid):
     global broadcasting
 
     try:
-        num_sensors = sensor_queue.get_nowait()
-        _LOGGER.debug("Number of sensors discovered: %s", num_sensors)
+        found_sensors.add(sensor_queue.get_nowait())
+        _LOGGER.debug("sensors discovered: %s", found_sensors)
         await sio.emit('broadcast-update',
-                       {'message': 'Starting... (Discovered {} sensors)'.format(num_sensors)},
+                       {'message': 'Starting... (Discovered sensors: {})'.format(found_sensors)},
                        room=sid)
 
-        if num_sensors >= expected_sensors:
+        if len(found_sensors) >= expected_sensors:
             _LOGGER.debug("Discovered all sensors so stopping")
             broadcasting = False
     except asyncio.QueueEmpty:
