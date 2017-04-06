@@ -121,7 +121,7 @@ class MonitorMode():
     async def __aenter__(self):
         _LOGGER.debug("Entering monitor mode")
         cmd = asyncio.create_subprocess_exec(
-            'iwconfig', self.interface, 'mode', 'monitor'
+            'iwconfig', self.interface, 'mode', 'monitor',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
         proc = await cmd
