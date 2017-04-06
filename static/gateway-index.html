@@ -32,6 +32,11 @@
             </span>
           </div>
 
+          <div class="input-group">
+            <span class="input-group-addon" id="sensors-label">Number of Sensors</span>
+            <input type="number" class="form-control" id="sensors" placeholder="" aria-describedby="sensors">
+          </div>
+
           <button type="button" id="broadcast-button" class="btn btn-default">
             Start
           </button>
@@ -74,7 +79,8 @@
       });
 
       $("#broadcast-button").click(function() {
-        socket.emit('broadcast-start', {ssid: $('#ssid').val(), password: $('#password').val()});
+        console.log({ssid: $('#ssid').val(), password: $('#password').val(), sensors: $('sensors').val()});
+        socket.emit('broadcast-start', {ssid: $('#ssid').val(), password: $('#password').val(), sensors: $('#sensors').val()});
       });
 
       $("#stop-broadcast-button").click(function() {

@@ -18,6 +18,7 @@ app = web.Application()
 sio.attach(app)
 
 broadcasting = False
+sensor_queue = asyncio.Queue()
 
 
 async def index(request):
@@ -25,12 +26,26 @@ async def index(request):
     with open('static/gateway-index.html') as f:
         return web.Response(text=f.read(), content_type='text/html')
 
+
+async def sensor_ping(request):
+    if not broadcasting:
+        return web.Response(text='Not broadcasting', content_type='text')
+    data = await request.post()
+
+    if 'num_sensors' not in data:
+        return web.Response(text='Must have num_sensors', content_type='text')
+
+    sensor_queue.put_nowait(int(data['num_sensors']))
+    return web.Response(text='Sensor has been added', content_type='text')
+
+
 @sio.on('status')
 async def status(sid):
     text = 'Broadcasting' if broadcasting else 'Not broadcasting'
     await sio.emit('status',
                    {'message': text},
                    room=sid)
+
 
 @sio.on('broadcast-start')
 async def start_broadcast(sid, data):
@@ -48,6 +63,12 @@ async def start_broadcast(sid, data):
                        room=sid)
         return
 
+    if 'sensors' not in data or len(data['sensors']) == 0:
+        await sio.emit('broadcast-update',
+                       {'message': 'Number of sensors must be provided'},
+                       room=sid)
+        return
+
     if broadcasting:
         await sio.emit('broadcast-update',
                        {'message': 'Already broadcasting'},
@@ -56,6 +77,7 @@ async def start_broadcast(sid, data):
 
     ssid = data['ssid']
     password = data['password']
+    expected_sensors = int(data['sensors'])
     broadcasting = True
 
     await sio.emit('broadcast-update',
@@ -63,45 +85,68 @@ async def start_broadcast(sid, data):
                    room=sid)
     await status(sid)
 
-    async def broadcast():
-        await send_wifi_info(ssid, password)
-        await sio.emit('broadcast-update',
-                       {'message': 'Stopped'},
-                       room=sid)
-
-    asyncio.ensure_future(broadcast())
+    asyncio.ensure_future(broadcast(ssid, password, expected_sensors, sid))
 
 
-async def send_wifi_info(ssid, password):
+async def broadcast(ssid, password, expected_sensors, sid):
+    global broadcasting
+    # Something that keeps track of how long its beens sending and increases FEC
+
     send_flag = 0
-
     while broadcasting:
-        _LOGGER.debug("Sending WiFi information")
-        # TODO: Generalize this
-        cmd = asyncio.create_subprocess_exec(
-            'python',
-            '/home/pi/unassociated_transfer/send_wifi.py',
-            '-l', '.8',
-            '-s', str(send_flag),
-            ssid, password,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
-        proc = await cmd
-        stdout_data, stderr_data = await proc.communicate()
-        _LOGGER.debug("stdout: %s", stdout_data)
-        _LOGGER.debug("stderr: %s", stderr_data)
-        _LOGGER.debug("-" * 80)
-        _LOGGER.debug("Done sending WiFi information")
-
-        # Exit early if done broadcasting
-        if not broadcasting:
-            break
+        await send_wifi_info(ssid, password, send_flag, .8)
 
         # Switch between 0 and 1
         send_flag = 1 - send_flag
 
         _LOGGER.debug("Waiting...")
-        await asyncio.sleep(BROADCAST_WAIT_TIME)
+        for i in range(BROADCAST_WAIT_TIME):
+            if not broadcasting:
+                break
+
+            await check_for_sensors(expected_sensors, sid)
+            await asyncio.sleep(1)
+
+    await sio.emit('broadcast-update',
+                   {'message': 'Stopped'},
+                   room=sid)
+    await status(sid)
+
+
+async def send_wifi_info(ssid, password, send_flag, possible_loss):
+    _LOGGER.debug("Sending WiFi information")
+    # TODO: Generalize this
+    cmd = asyncio.create_subprocess_exec(
+        'python',
+        '/home/pi/unassociated_transfer/send_wifi.py',
+        '-l', str(possible_loss),
+        '-s', str(send_flag),
+        ssid, password,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE)
+    proc = await cmd
+    stdout_data, stderr_data = await proc.communicate()
+    _LOGGER.debug("stdout: %s", stdout_data)
+    _LOGGER.debug("stderr: %s", stderr_data)
+    _LOGGER.debug("-" * 80)
+    _LOGGER.debug("Done sending WiFi information")
+
+
+async def check_for_sensors(expected_sensors, sid):
+    global broadcasting
+
+    try:
+        num_sensors = sensor_queue.get_nowait()
+        _LOGGER.debug("Number of sensors discovered: %s", num_sensors)
+        await sio.emit('broadcast-update',
+                       {'message': 'Starting... (Discovered {} sensors)'.format(num_sensors)},
+                       room=sid)
+
+        if num_sensors >= expected_sensors:
+            _LOGGER.debug("Discovered all sensors so stopping")
+            broadcasting = False
+    except asyncio.QueueEmpty:
+        pass
 
 
 @sio.on('broadcast-stop')
@@ -120,3 +165,4 @@ async def stop_broadcast(sid):
 
 app.router.add_static('/static', 'static')
 app.router.add_get('/', index)
+app.router.add_post('/ping', sensor_ping)
