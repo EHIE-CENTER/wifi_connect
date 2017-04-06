@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import logging
 import socket
 
+import requests
+
 import wifi
 
 logging.basicConfig(level=logging.DEBUG)
@@ -50,8 +52,8 @@ async def start(interface):
             if result is not None:
                 _LOGGER.debug("Connected (%s)!", result)
                 _LOGGER.debug("Pinging gateway")
-                request.post("http://gateway.local:3210/ping",
-                             data={'sensor': hostname})
+                requests.post("http://gateway.local:3210/ping",
+                              data={'sensor': hostname})
             else:
                 _LOGGER.debug("Not connected!")
 
