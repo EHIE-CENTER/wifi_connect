@@ -104,6 +104,9 @@ async def receive_wifi_info(interface):
         _LOGGER.debug("stdout: %s", stdout_data)
         _LOGGER.debug("stderr: %s", stderr_data)
 
+        if data == '':
+            return None
+
         data = stdout_data.decode()
         ssid, password = data.strip().split(':')
 
