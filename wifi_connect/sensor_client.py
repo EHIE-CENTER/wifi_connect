@@ -134,12 +134,12 @@ class MonitorMode():
 
     async def __aexit__(self, exc_type, exc, tb):
         _LOGGER.debug("Exiting monitor mode")
-        # cmd = asyncio.create_subprocess_exec(
-        #     'airmon-ng', 'stop', self.interface,
-        #     stdout=asyncio.subprocess.PIPE,
-        #     stderr=asyncio.subprocess.PIPE)
-        # proc = await cmd
-        # stdout_data, stderr_data = await proc.communicate()
+        cmd = asyncio.create_subprocess_exec(
+            'iwconfig', self.interface, 'mode', 'Managed',
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        proc = await cmd
+        stdout_data, stderr_data = await proc.communicate()
 
-        # _LOGGER.debug("stdout: %s", stdout_data)
-        # _LOGGER.debug("stderr: %s", stderr_data)
+        _LOGGER.debug("stdout: %s", stdout_data)
+        _LOGGER.debug("stderr: %s", stderr_data)
