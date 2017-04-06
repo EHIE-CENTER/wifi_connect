@@ -2,6 +2,7 @@ import asyncio
 from collections import namedtuple
 from contextlib import contextmanager
 import logging
+import socket
 
 import wifi
 
