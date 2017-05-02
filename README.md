@@ -50,22 +50,3 @@ python wifi_connect gateway
 ```
 
 This starts a web server that provides an interface to configure the network name and password for a WiFi enabled device. To access this web app, the device must be connected to Ethernet. You can then go to `http://[device-ip]:3210/`.
-
-
-
-
-<!--
-airmon-ng -- http://tinkernow.com/2014/09/installing-aircrack-ng-beaglebone-black/
-
-https://github.com/aircrack-ng/aircrack-ng/blob/4ffc6f75923e81aa8070918584ea1a376a1ea896/scripts/airmon-ng
-
-sudo python3 -m venv /srv/wifi_connect
-cd wifi_connect
-sudo /srv/wifi_connect/bin/pip install -r requirements.txt
-
-
-You must also install `iw`
-
-apt-get update
-apt-get install iw ethtool
--->
