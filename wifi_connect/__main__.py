@@ -36,7 +36,7 @@ def run_gateway(args):
 def run_sensor(args):
     import wifi
     import sensor_client
-    from sensor_server import app, sio
+    from sensor_server import app
 
     app.interface = args.interface
 
@@ -44,7 +44,7 @@ def run_sensor(args):
     loop.run_until_complete(wifi.update_interfaces())
 
     # Start process to listen for gateway broadcasts
-    asyncio.ensure_future(sensor_client.start(args.interface, sio))
+    asyncio.ensure_future(sensor_client.start(args.interface))
 
     # Start server
     web.run_app(app, port=3210)
