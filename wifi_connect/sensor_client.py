@@ -5,6 +5,7 @@ import logging
 import socket
 
 import requests
+import socketio
 
 import wifi
 
@@ -22,27 +23,42 @@ _LOGGER.info("Getting host name")
 hostname = socket.gethostname()
 _LOGGER.info("Hostname: %s", hostname)
 
+sio = socketio.AsyncServer()
 
-async def start(interface):
+
+async def start(interface, app):
     _LOGGER.debug("Starting...")
+    sio.attach(app)
+    await sio.emit('wifi-update',
+                   {'message': 'Starting...'})
+
     while RUNNING:
         if await connected(interface):
             _LOGGER.debug("Already connected. Waiting %s seconds before checking again.",
                           CONNECTED_WAIT_TIME)
+            await sio.emit('wifi-update',
+                           {'message': 'Already connected'})
             await asyncio.sleep(CONNECTED_WAIT_TIME)
             continue
 
         _LOGGER.debug("Not connected. Looking for new WiFi credentials...")
+        await sio.emit('wifi-update',
+                       {'message': 'Not connected, looking for WiFi credentials'})
         async with MonitorMode(interface) as monitor:
             for channel in CHANNELS:
                 _LOGGER.debug("Setting channel to %s", channel)
                 await monitor.set_channel(channel)
+
+                await sio.emit('wifi-update',
+                               {'message': 'Waiting on channel'.format(channel)})
 
                 wifi_info = await receive_wifi_info(interface)
                 _LOGGER.debug("Received wifi info: %s", wifi_info)
                 if wifi_info is not None:
                     ssid, password = wifi_info
                     _LOGGER.debug("Saving WiFi credentials")
+                    await sio.emit('wifi-update',
+                                   {'message': 'Received WiFi info!'})
                     await save_wifi_credentials(interface, ssid, password)
                     break
 
