@@ -23,12 +23,10 @@ _LOGGER.info("Getting host name")
 hostname = socket.gethostname()
 _LOGGER.info("Hostname: %s", hostname)
 
-sio = socketio.AsyncServer()
 
 
-async def start(interface, app):
+async def start(interface, sio):
     _LOGGER.debug("Starting...")
-    sio.attach(app)
     await sio.emit('wifi-update',
                    {'message': 'Starting...'})
 
