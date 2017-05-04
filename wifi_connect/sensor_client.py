@@ -8,6 +8,7 @@ import requests
 import socketio
 
 import wifi
+import utils
 
 logging.basicConfig(level=logging.DEBUG)
 
