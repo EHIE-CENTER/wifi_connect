@@ -14,8 +14,8 @@ logging.basicConfig(level=logging.DEBUG)
 _LOGGER = logging.getLogger(__name__)
 CHANNELS = [11]
 CONNECTED_WAIT_TIME = 5 * 60
-RECEIVE_WAIT_TIME = 15
-TRY_WAIT_TIME = 1 * 60
+RECEIVE_WAIT_TIME = 45
+TRY_WAIT_TIME = 5
 RUNNING = True
 Network = namedtuple('Network', ['ssid', 'encryption'])
 
