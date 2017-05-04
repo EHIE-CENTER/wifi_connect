@@ -95,7 +95,7 @@ async def broadcast(ssid, password, expected_sensors, sid):
 
     send_flag = 0
     while broadcasting:
-        await send_wifi_info(ssid, password, send_flag, .8)
+        await send_wifi_info(ssid, password, send_flag, .87)
 
         # Switch between 0 and 1
         send_flag = 1 - send_flag
