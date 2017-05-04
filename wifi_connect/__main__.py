@@ -3,6 +3,7 @@ import asyncio
 import functools
 import logging
 from logging import handlers
+import os
 import signal
 
 from aiohttp import web
@@ -29,6 +30,9 @@ loop = asyncio.get_event_loop()
 
 
 def run_gateway(args):
+    if os.geteuid() != 0:
+        exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
+
     from gateway_server import app
     web.run_app(app, port=3210)
 
