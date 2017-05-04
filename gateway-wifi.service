@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/pi/wifi_connect/
-ExecStart=/srv/homeassistant/bin/python wifi_connect gateway
+ExecStart=/srv/wifi_connect/bin/python wifi_connect gateway
 
 [Install]
 WantedBy=multi-user.target
