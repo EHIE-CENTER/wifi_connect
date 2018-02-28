@@ -2,7 +2,9 @@ import asyncio
 from collections import namedtuple
 from contextlib import contextmanager
 import logging
+import random
 import socket
+import time
 
 import requests
 import socketio
@@ -13,7 +15,7 @@ import utils
 logging.basicConfig(level=logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
-CHANNELS = [11]
+CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 CONNECTED_WAIT_TIME = 5 * 60
 RECEIVE_WAIT_TIME = 45
 TRY_WAIT_TIME = 5
@@ -38,16 +40,18 @@ async def start(interface):
 
         _LOGGER.debug("Not connected. Looking for new WiFi credentials...")
         async with MonitorMode(interface) as monitor:
-            for channel in CHANNELS:
+            for channel in random.shuffle(CHANNELS):
                 _LOGGER.debug("Setting channel to %s", channel)
                 await monitor.set_channel(channel)
 
+                _LOGGER.debug("Starting: %s", time.time())
                 wifi_info = await receive_wifi_info(interface)
+                _LOGGER.debug("Ending: %s", time.time())
                 _LOGGER.debug("Received wifi info: %s", wifi_info)
                 if wifi_info is not None:
                     ssid, password = wifi_info
                     _LOGGER.debug("Saving WiFi credentials")
-                    await save_wifi_credentials(interface, ssid, password)
+                    # await save_wifi_credentials(interface, ssid, password)
                     break
 
         if await has_wifi_credentials(interface):
