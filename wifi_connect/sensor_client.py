@@ -40,7 +40,7 @@ async def start(interface):
 
         _LOGGER.debug("Not connected. Looking for new WiFi credentials...")
         async with MonitorMode(interface) as monitor:
-            for channel in random.shuffle(CHANNELS):
+            for channel in random.sample(CHANNELS, len(CHANNELS)):
                 _LOGGER.debug("Setting channel to %s", channel)
                 await monitor.set_channel(channel)
 
